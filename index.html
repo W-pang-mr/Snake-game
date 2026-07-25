@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>سیاره‌خور</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
+  html, body { height:100%; overflow:hidden; background:#000; color:#fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Roboto, sans-serif;
+    touch-action:none; user-select:none; }
+  #app { position:relative; width:100vw; height:100vh; }
+  .screen { position:absolute; inset:0; bottom:64px; display:flex; flex-direction:column; align-items:center;
+    padding:16px; overflow-y:auto; background:#000; }
+  .screen.hidden { display:none; }
+  .screen.full { bottom:0; padding:0; }
+
+  h1.title { font-size:24px; font-weight:800; margin:6px 0; text-align:center;
+    background:linear-gradient(90deg,#4fa8ff,#ff5cf0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle { color:#8a99ad; font-size:13px; margin-bottom:16px; text-align:center; }
+
+  .topbar { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:420px; margin-bottom:10px; }
+  .token-pill, .rank-pill { display:flex; align-items:center; gap:6px; background:#12161f; border:1px solid #24303f;
+    border-radius:999px; padding:8px 14px; font-weight:700; font-size:14px; }
+  .token-coin { width:18px; height:18px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff2a8,#e0a800); }
+
+  .modepick { display:flex; align-items:center; justify-content:center; gap:14px; margin:18px 0; width:100%; }
+  .mode-arrow { width:44px; height:44px; border-radius:50%; background:#12161f; border:1px solid #24303f;
+    display:flex; align-items:center; justify-content:center; font-size:20px; color:#4fa8ff; }
+  .mode-card { width:200px; height:200px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#1c2635,#090c11);
+    border:2px solid #2a3a4d; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+  .mode-card .emoji { font-size:52px; }
+  .mode-card .modename { font-weight:800; font-size:16px; }
+  .mode-card .modesub { font-size:11px; color:#7f93a8; }
+  .mode-card.disabled { opacity:.45; }
+
+  button.btn { background:linear-gradient(135deg,#4fa8ff,#3d7fc9); color:#fff; border:none; border-radius:14px;
+    padding:14px 20px; font-size:16px; font-weight:700; width:100%; max-width:380px; box-shadow:0 6px 16px rgba(79,168,255,.3); }
+  button.btn:active { transform:scale(.97); }
+  button.btn.secondary { background:#161f2b; box-shadow:none; border:1px solid #2c3d52; color:#cfe0f2; margin-top:10px; }
+  button.btn:disabled { opacity:.4; }
+
+  .soon-box { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:10px; }
+  .soon-box .big { font-size:44px; }
+
+  /* Items screen */
+  .section-title { align-self:flex-start; font-weight:800; font-size:15px; margin:14px 2px 8px; width:100%; max-width:420px; }
+  .skin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:420px; }
+  .skin-card { background:#0e131b; border:2px solid #22303f; border-radius:14px; padding:10px; text-align:center; position:relative; }
+  .skin-card.equipped { border-color:#7ee787; }
+  .skin-avatar { width:64px; height:64px; border-radius:50%; margin:0 auto 6px; }
+  .skin-tag { font-size:9px; font-weight:800; padding:2px 6px; border-radius:999px; display:inline-block; margin-top:4px; }
+  .skin-name { font-size:11px; font-weight:700; margin-top:2px; }
+  .tag-starter { background:#2a3a4d; color:#9fc7ff; }
+  .tag-common { background:#1f5c33; color:#7ee787; }
+  .tag-rare { background:#1a4a7a; color:#7fd0ff; }
+  .tag-epic { background:#5a1f7a; color:#e0a8ff; }
+  .tag-legend { background:#7a5a10; color:#ffd766; }
+  .lock-overlay { position:absolute; inset:0; background:rgba(0,0,0,.55); border-radius:14px; display:flex;
+    align-items:center; justify-content:center; font-size:22px; }
+
+  .lootbox-card { background:linear-gradient(160deg,#141a24,#0d1218); border:1px solid #26364a; border-radius:18px;
+    padding:16px; width:100%; max-width:420px; display:flex; align-items:center; gap:14px; }
+  .lootbox-icon { width:64px; height:64px; border-radius:14px; background:linear-gradient(135deg,#3dd6ff,#4fa8ff);
+    display:flex; align-items:center; justify-content:center; font-size:30px; }
+  .lootbox-info { flex:1; }
+  .lootbox-name { font-weight:800; font-size:15px; }
+  .lootbox-supply { font-size:11px; color:#8a99ad; margin-top:2px; }
+  .lootbox-buy { background:linear-gradient(135deg,#ffd700,#ff9d00); color:#3a2400; font-weight:800;
+    border:none; border-radius:10px; padding:8px 14px; font-size:13px; white-space:nowrap; }
+
+  /* Perks screen */
+  .perk-card { background:#0e131b; border:1px solid #22303f; border-radius:16px; padding:14px; width:100%; max-width:420px; margin-bottom:12px; }
+  .perk-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .perk-name { font-weight:800; font-size:15px; }
+  .perk-level { font-size:12px; color:#8a99ad; }
+  .perk-bar-bg { height:8px; border-radius:999px; background:#1c2634; overflow:hidden; margin-bottom:10px; }
+  .perk-bar-fill { height:100%; background:linear-gradient(90deg,#4fa8ff,#7ee787); }
+  .perk-upgrade { display:flex; justify-content:space-between; align-items:center; }
+  .perk-cost { font-size:13px; color:#ffd766; font-weight:700; }
+  .perk-btn { background:linear-gradient(135deg,#4fa8ff,#3d7fc9); border:none; border-radius:10px; color:#fff;
+    font-weight:700; padding:8px 16px; font-size:13px; }
+  .perk-btn:disabled { opacity:.35; }
+
+  /* bottom nav */
+  #bottomnav { position:absolute; left:0; right:0; bottom:0; height:64px; display:flex;
+    background:#0a0d12; border-top:1px solid #1c2530; z-index:20; }
+  .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    color:#5c6b7d; font-size:10px; }
+  .nav-btn.active { color:#4fa8ff; }
+  .nav-btn .nav-icon { font-size:20px; }
+
+  /* game screen */
+  #hud { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between;
+    font-size:14px; color:#cfe0f2; pointer-events:none; z-index:5; }
+  #hud b { color:#4fa8ff; }
+  #back-btn { position:absolute; top:12px; left:12px; z-index:8; background:rgba(255,255,255,.08); border:none;
+    color:#fff; border-radius:10px; padding:6px 10px; font-size:13px; }
+  #split-btn { position:absolute; bottom:26px; right:20px; width:78px; height:78px; border-radius:50%;
+    background:rgba(79,168,255,.25); border:2px solid #4fa8ff; color:#fff; font-weight:800; font-size:13px; z-index:8; }
+  #split-btn:disabled { opacity:.35; border-color:#48607a; }
+  #joystick-base { position:absolute; width:120px; height:120px; border-radius:50%;
+    background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.15); display:none; z-index:6; }
+  #joystick-knob { position:absolute; width:52px; height:52px; border-radius:50%;
+    background:rgba(79,168,255,0.55); border:2px solid rgba(255,255,255,0.4); display:none; z-index:7; }
+
+  .go-mass { font-size:44px; font-weight:900; color:#7ee787; margin:8px 0; }
+  .go-tokens { color:#ffd766; font-weight:700; margin-bottom:6px; }
+  .go-best { color:#8a99ad; font-size:14px; margin-bottom:20px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen" id="screen-home">
+    <div class="topbar">
+      <div class="token-pill"><div class="token-coin"></div><span id="home-tokens">0</span></div>
+      <div class="rank-pill">🏅 <span id="home-rank">1</span></div>
+    </div>
+    <h1 class="title">🪐 سیاره‌خور</h1>
+    <p class="subtitle">دون‌ها رو بخور، بزرگ شو، مراقب سیاره‌های بزرگ‌تر باش</p>
+
+    <div class="modepick">
+      <button class="mode-arrow" id="mode-prev">◀</button>
+      <div class="mode-card" id="mode-card">
+        <div class="emoji" id="mode-emoji">🤖</div>
+        <div class="modename" id="mode-name">هوش مصنوعی</div>
+        <div class="modesub" id="mode-sub">۱۰ ربات حریف</div>
+      </div>
+      <button class="mode-arrow" id="mode-next">▶</button>
+    </div>
+
+    <button class="btn" id="play-btn">▶ شروع بازی</button>
+  </div>
+
+  <!-- MARKET (soon) -->
+  <div class="screen hidden" id="screen-market">
+    <div class="soon-box"><div class="big">🛒</div><h1 class="title">مارکت</h1><p class="subtitle">به زودی...</p></div>
+  </div>
+
+  <!-- SOON -->
+  <div class="screen hidden" id="screen-soon">
+    <div class="soon-box"><div class="big">✨</div><h1 class="title">به زودی</h1><p class="subtitle">این بخش هنوز آماده نشده</p></div>
+  </div>
+
+  <!-- ITEMS -->
+  <div class="screen hidden" id="screen-items">
+    <h1 class="title">🎒 آیتم‌ها</h1>
+    <div class="section-title">اسکین‌ها</div>
+    <div class="skin-grid" id="skin-grid"></div>
+
+    <div class="section-title">لوت‌باکس</div>
+    <div class="lootbox-card">
+      <div class="lootbox-icon">📦</div>
+      <div class="lootbox-info">
+        <div class="lootbox-name">Newer</div>
+        <div class="lootbox-supply" id="lootbox-supply">در حال بارگذاری...</div>
+      </div>
+      <button class="lootbox-buy" id="lootbox-buy-btn">🪙 10000</button>
+    </div>
+  </div>
+
+  <!-- PERKS -->
+  <div class="screen hidden" id="screen-perks">
+    <h1 class="title">⚡ ارتقاها</h1>
+
+    <div class="perk-card">
+      <div class="perk-head"><span class="perk-name">کاهش کول‌داون تقسیم</span><span class="perk-level" id="perk-split-level">لول 0/50</span></div>
+      <div class="perk-bar-bg"><div class="perk-bar-fill" id="perk-split-bar" style="width:0%"></div></div>
+      <div class="perk-upgrade">
+        <span class="perk-cost" id="perk-split-cost">هزینه: 50 توکن</span>
+        <button class="perk-btn" id="perk-split-btn">ارتقا</button>
+      </div>
+    </div>
+
+    <div class="perk-card">
+      <div class="perk-head"><span class="perk-name">افزایش سرعت</span><span class="perk-level" id="perk-speed-level">لول 0/50</span></div>
+      <div class="perk-bar-bg"><div class="perk-bar-fill" id="perk-speed-bar" style="width:0%"></div></div>
+      <div class="perk-upgrade">
+        <span class="perk-cost" id="perk-speed-cost">هزینه: 50 توکن</span>
+        <button class="perk-btn" id="perk-speed-btn">ارتقا</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomnav">
+    <div class="nav-btn active" data-tab="home"><span class="nav-icon">🏠</span>خانه</div>
+    <div class="nav-btn" data-tab="market"><span class="nav-icon">🛒</span>مارکت</div>
+    <div class="nav-btn" data-tab="soon"><span class="nav-icon">✨</span>بزودی</div>
+    <div class="nav-btn" data-tab="items"><span class="nav-icon">🎒</span>آیتم‌ها</div>
+    <div class="nav-btn" data-tab="perks"><span class="nav-icon">⚡</span>ارتقا</div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen hidden full" id="screen-game">
+    <canvas id="board"></canvas>
+    <button id="back-btn">✕ خروج</button>
+    <div id="hud">
+      <span>حجم: <b id="hud-mass">0</b></span>
+      <span>قطعات: <b id="hud-pieces">1</b></span>
+    </div>
+    <button id="split-btn">تقسیم</button>
+    <div id="joystick-base"></div>
+    <div id="joystick-knob"></div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen hidden" id="screen-over" style="bottom:0;">
+    <h1 class="title">بلعیده شدی! 💥</h1>
+    <div class="go-mass" id="go-mass">0</div>
+    <div class="go-tokens" id="go-tokens">+0 توکن</div>
+    <div class="go-best">رکورد شما: <b id="go-best">0</b></div>
+    <button class="btn" id="retry-btn">🔁 دوباره بازی کن</button>
+    <button class="btn secondary" id="menu-btn">منوی اصلی</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+
+  /* ---------- Firebase ---------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDfvJCZQX8u6fzPRpBIh1BY0zHS6fx27Ro",
+    authDomain: "planet-2fdf2.firebaseapp.com",
+    databaseURL: "https://planet-2fdf2-default-rtdb.firebaseio.com",
+    projectId: "planet-2fdf2",
+    storageBucket: "planet-2fdf2.firebasestorage.app",
+    messagingSenderId: "237872686307",
+    appId: "1:237872686307:web:9c670a134208bacbd651d6"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  /* ---------- identify user ---------- */
+  const LS = {
+    get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v); }catch(e){return d;} },
+    set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+  let uid, displayName;
+  const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if (tgUser && tgUser.id) {
+    uid = 'tg_' + tgUser.id;
+    displayName = tgUser.first_name || 'بازیکن';
+  } else {
+    uid = LS.get('pe_local_uid', null);
+    if (!uid) { uid = 'local_' + Math.random().toString(36).slice(2,10); LS.set('pe_local_uid', uid); }
+    displayName = 'بازیکن';
+  }
+
+  const SKIN_DB = {
+    dead_star:      { name:'Dead Star',        rarity:'starter', color:'#dfeaf2' },
+    no_mouse:       { name:'No Mouse',         rarity:'common',  color:'#7a4fd9' },
+    golden_bowl:    { name:'Golden Bowl',      rarity:'common',  color:'#caa23a' },
+    slime_resist:   { name:'Slime Resistance', rarity:'rare',    color:'#4a2f8a' },
+    when_lambo:     { name:'When Lambo',       rarity:'rare',    color:'#f0d020' },
+    higher:         { name:'Higher',           rarity:'rare',    color:'#5a4fc9' },
+    reputation:     { name:'Reputation',       rarity:'epic',    color:'#e8d060' },
+    collector_cap:  { name:'Collector',        rarity:'legend',  color:'#a86fff' },
+    triangle_nine:  { name:'Triangle 9',       rarity:'legend',  color:'#3dd6ff' },
+  };
+  const LOOTBOX_POOL = {
+    common: ['no_mouse','golden_bowl'],
+    rare: ['slime_resist','when_lambo','higher'],
+    epic: ['reputation'],
+    legend: ['collector_cap','triangle_nine']
+  };
+  const RARITY_WEIGHTS = { common:60, rare:25, epic:10, legend:5 };
+  const TAG_CLASS = { starter:'tag-starter', common:'tag-common', rare:'tag-rare', epic:'tag-epic', legend:'tag-legend' };
+  const TAG_LABEL = { starter:'شروع', common:'Common', rare:'Rare', epic:'Epic', legend:'Legend' };
+
+  let profile = null; // live mirror of DB user data
+
+  function defaultProfile(){
+    return {
+      name: displayName,
+      tokens: 0,
+      bestMass: 0,
+      equippedSkin: 'dead_star',
+      perks: { splitCooldownLevel:0, speedLevel:0 },
+      inventory: { skins: { dead_star: { tag:'starter' } } }
+    };
+  }
+
+  const userRef = db.ref('users/' + uid);
+  userRef.once('value').then(snap => {
+    if (!snap.exists()) {
+      profile = defaultProfile();
+      userRef.set(profile);
+    } else {
+      profile = snap.val();
+      if (!profile.inventory) profile.inventory = { skins:{ dead_star:{tag:'starter'} } };
+      if (!profile.inventory.skins || !profile.inventory.skins.dead_star) {
+        profile.inventory.skins = profile.inventory.skins || {};
+        profile.inventory.skins.dead_star = { tag:'starter' };
+        userRef.child('inventory/skins/dead_star').set({ tag:'starter' });
+      }
+      if (!profile.perks) profile.perks = { splitCooldownLevel:0, speedLevel:0 };
+      if (!profile.equippedSkin) profile.equippedSkin = 'dead_star';
+    }
+    renderAll();
+  }).catch(err => {
+    console.error('Firebase read error', err);
+    profile = defaultProfile();
+    renderAll();
+  });
+
+  function saveField(path, value){
+    if (uid) userRef.child(path).set(value).catch(e=>console.error('save error', path, e));
+  }
+
+  /* ---------- screens / nav ---------- */
+  const screens = {};
+  document.querySelectorAll('.screen').forEach(s => screens[s.id]=s);
+  function showScreen(id){ Object.values(screens).forEach(s=>s.classList.add('hidden')); screens[id].classList.remove('hidden'); }
+  const bottomnav = document.getElementById('bottomnav');
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      showScreen('screen-'+btn.dataset.tab);
+      if (btn.dataset.tab==='items') renderItems();
+      if (btn.dataset.tab==='perks') renderPerks();
+    });
+  });
+
+  function renderAll(){
+    document.getElementById('home-tokens').textContent = profile.tokens || 0;
+    document.getElementById('home-rank').textContent = Math.max(1, Math.floor((profile.bestMass||0)/50)+1);
+    renderItems();
+    renderPerks();
+  }
+
+  /* ---------- game mode picker ---------- */
+  const MODES = [
+    { id:'ai', emoji:'🤖', name:'هوش مصنوعی', sub:'۱۰ ربات حریف', enabled:true },
+    { id:'classic', emoji:'🌍', name:'کلاسیک', sub:'به زودی', enabled:false },
+  ];
+  let modeIdx = 0;
+  function renderMode(){
+    const m = MODES[modeIdx];
+    document.getElementById('mode-emoji').textContent = m.emoji;
+    document.getElementById('mode-name').textContent = m.name;
+    document.getElementById('mode-sub').textContent = m.sub;
+    document.getElementById('mode-card').classList.toggle('disabled', !m.enabled);
+    document.getElementById('play-btn').disabled = !m.enabled;
+  }
+  document.getElementById('mode-prev').addEventListener('click', ()=>{ modeIdx=(modeIdx-1+MODES.length)%MODES.length; renderMode(); });
+  document.getElementById('mode-next').addEventListener('click', ()=>{ modeIdx=(modeIdx+1)%MODES.length; renderMode(); });
+  renderMode();
+  document.getElementById('play-btn').addEventListener('click', ()=>{ if (MODES[modeIdx].enabled) startGame(); });
+
+  /* ---------- items rendering ---------- */
+  function renderItems(){
+    if (!profile) return;
+    const grid = document.getElementById('skin-grid');
+    grid.innerHTML = '';
+    Object.keys(SKIN_DB).forEach(id=>{
+      const skin = SKIN_DB[id];
+      const owned = profile.inventory && profile.inventory.skins && profile.inventory.skins[id];
+      const tag = owned ? owned.tag : skin.rarity;
+      const card = document.createElement('div');
+      card.className = 'skin-card' + (profile.equippedSkin===id ? ' equipped':'');
+      card.innerHTML = `
+        <div class="skin-avatar" style="background:radial-gradient(circle at 35% 30%, #fff6, ${skin.color})"></div>
+        <div class="skin-name">${skin.name}</div>
+        <div class="skin-tag ${TAG_CLASS[tag]||'tag-common'}">${TAG_LABEL[tag]||tag}</div>
+        ${!owned ? '<div class="lock-overlay">🔒</div>' : ''}
+      `;
+      if (owned) card.addEventListener('click', ()=>{
+        profile.equippedSkin = id;
+        saveField('equippedSkin', id);
+        renderItems();
+      });
+      grid.appendChild(card);
+    });
+
+    db.ref('lootboxSupply/newer').once('value').then(snap=>{
+      const d = snap.val() || { claimed:0, max:1000 };
+      document.getElementById('lootbox-supply').textContent = `${d.claimed}/${d.max} برداشته شده`;
+      document.getElementById('lootbox-buy-btn').disabled = d.claimed >= d.max;
+    });
+  }
+
+  const LOOTBOX_PRICE = 10000;
+
+  function pickRandomSkin(){
+    const roll = Math.random()*100;
+    let acc=0, chosenRarity='common';
+    for (const r of ['common','rare','epic','legend']){
+      acc += RARITY_WEIGHTS[r];
+      if (roll <= acc) { chosenRarity = r; break; }
+    }
+    const pool = LOOTBOX_POOL[chosenRarity];
+    const skinId = pool[Math.floor(Math.random()*pool.length)];
+    return { skinId, rarity: chosenRarity };
+  }
+
+  function notify(msg){ if (tg && tg.showAlert) tg.showAlert(msg); else alert(msg); }
+
+  document.getElementById('lootbox-buy-btn').addEventListener('click', ()=>{
+    if (!profile) return;
+    if ((profile.tokens||0) < LOOTBOX_PRICE) { notify('توکن کافی نداری! به '+LOOTBOX_PRICE+' توکن نیاز داری.'); return; }
+
+    const supplyRef = db.ref('lootboxSupply/newer');
+    supplyRef.transaction(current=>{
+      current = current || { claimed:0, max:1000 };
+      if (current.claimed < current.max) current.claimed += 1;
+      return current;
+    }, (err, committed, snap)=>{
+      if (err) { notify('خطا در بررسی موجودی، دوباره امتحان کن.'); return; }
+      const data = snap.val();
+      if (!data || data.claimed > data.max) { notify('لوت‌باکس Newer تموم شده! 😔'); return; }
+
+      profile.tokens -= LOOTBOX_PRICE;
+      saveField('tokens', profile.tokens);
+      document.getElementById('home-tokens').textContent = profile.tokens;
+
+      const { skinId, rarity } = pickRandomSkin();
+      const owned = profile.inventory.skins && profile.inventory.skins[skinId];
+      if (owned) {
+        const refund = Math.round(LOOTBOX_PRICE*0.25);
+        profile.tokens += refund;
+        saveField('tokens', profile.tokens);
+        document.getElementById('home-tokens').textContent = profile.tokens;
+        notify('این اسکین رو از قبل داشتی! به‌جاش '+refund+' توکن جایزه گرفتی 🎁');
+      } else {
+        profile.inventory.skins = profile.inventory.skins || {};
+        profile.inventory.skins[skinId] = { tag: rarity };
+        saveField('inventory/skins/'+skinId, { tag: rarity });
+        notify('تبریک! اسکین جدید «'+SKIN_DB[skinId].name+'» ('+TAG_LABEL[rarity]+') گرفتی 🎉');
+      }
+      renderItems();
+    });
+  });
+
+  /* ---------- perks rendering ---------- */
+  const MAX_PERK_LEVEL = 50;
+  function perkCost(nextLevel){ return Math.round(50 * Math.pow(1.3, nextLevel-1)); }
+
+  function renderPerks(){
+    if (!profile) return;
+    const sLvl = profile.perks.splitCooldownLevel || 0;
+    const spLvl = profile.perks.speedLevel || 0;
+    document.getElementById('perk-split-level').textContent = `لول ${sLvl}/${MAX_PERK_LEVEL}`;
+    document.getElementById('perk-split-bar').style.width = (sLvl/MAX_PERK_LEVEL*100)+'%';
+    document.getElementById('perk-speed-level').textContent = `لول ${spLvl}/${MAX_PERK_LEVEL}`;
+    document.getElementById('perk-speed-bar').style.width = (spLvl/MAX_PERK_LEVEL*100)+'%';
+
+    const splitMaxed = sLvl>=MAX_PERK_LEVEL, speedMaxed = spLvl>=MAX_PERK_LEVEL;
+    const sCost = splitMaxed?0:perkCost(sLvl+1), spCost = speedMaxed?0:perkCost(spLvl+1);
+    document.getElementById('perk-split-cost').textContent = splitMaxed?'حداکثر':'هزینه: '+sCost+' توکن';
+    document.getElementById('perk-speed-cost').textContent = speedMaxed?'حداکثر':'هزینه: '+spCost+' توکن';
+    document.getElementById('perk-split-btn').disabled = splitMaxed || (profile.tokens||0) < sCost;
+    document.getElementById('perk-speed-btn').disabled = speedMaxed || (profile.tokens||0) < spCost;
+  }
+
+  function tryUpgrade(kind){
+    const key = kind==='split' ? 'splitCooldownLevel' : 'speedLevel';
+    const lvl = profile.perks[key] || 0;
+    if (lvl >= MAX_PERK_LEVEL) return;
+    const cost = perkCost(lvl+1);
+    if ((profile.tokens||0) < cost) return;
+    profile.tokens -= cost;
+    profile.perks[key] = lvl+1;
+    saveField('tokens', profile.tokens);
+    saveField('perks/'+key, profile.perks[key]);
+    document.getElementById('home-tokens').textContent = profile.tokens;
+    renderPerks();
+  }
+  document.getElementById('perk-split-btn').addEventListener('click', ()=>tryUpgrade('split'));
+  document.getElementById('perk-speed-btn').addEventListener('click', ()=>tryUpgrade('speed'));
+
+  /* ================= GAME ENGINE ================= */
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  function fitCanvas(){ canvas.width = innerWidth*devicePixelRatio; canvas.height = innerHeight*devicePixelRatio;
+    canvas.style.width = innerWidth+'px'; canvas.style.height = innerHeight+'px';
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+  window.addEventListener('resize', fitCanvas);
+
+  const WORLD = 3000, PELLET_COUNT = 220, BOT_COUNT = 10;
+  const BOT_COLORS = ['#ff5c5c','#ffd23d','#7ee787','#ff9d3d','#a86fff','#3dd6ff','#ff5cf0','#ff8080','#80ffcf','#c48bff'];
+  const SPLIT_MIN_MASS = 35, MAX_PIECES = 16, SPLIT_MERGE_LOCK = 15;
+  const BASE_SPLIT_COOLDOWN = 5;
+
+  let pieces, bots, pellets, camScale, running, lastT, splitCooldownLeft, maxMassReached;
+
+  function radiusFromMass(m){ return 8 + Math.sqrt(m)*3.1; }
+  function baseSpeedFromRadius(r){ return Math.max(46, 320/(1+r/34)); }
+  function speedMultiplier(){ return 1 + (profile.perks.speedLevel||0)*0.02; }
+  function splitCooldownMax(){ return Math.max(0, BASE_SPLIT_COOLDOWN - (profile.perks.splitCooldownLevel||0)*0.1); }
+
+  function randPos(){ return { x:40+Math.random()*(WORLD-80), y:40+Math.random()*(WORLD-80) }; }
+  function makePellet(){ const p=randPos(); return {x:p.x,y:p.y,r:5+Math.random()*3,color:`hsl(${Math.floor(Math.random()*360)},80%,60%)`}; }
+  function makeBot(idx, awayFrom){
+    let pos; do { pos = randPos(); } while (awayFrom && Math.hypot(pos.x-awayFrom.x,pos.y-awayFrom.y) < 500);
+    return { name:'AI '+idx, x:pos.x, y:pos.y, mass:14+Math.random()*14, color:BOT_COLORS[idx%BOT_COLORS.length],
+      wanderDir:{x:0,y:0}, wanderT:0, dispR:12 };
+  }
+
+  function startGame(){
+    fitCanvas();
+    pieces = [ { x:WORLD/2, y:WORLD/2, mass:22, dispR:radiusFromMass(22), boostT:0, boostX:0, boostY:0, mergeAt:0 } ];
+    bots = []; for (let i=1;i<=BOT_COUNT;i++) bots.push(makeBot(i, pieces[0]));
+    pellets = []; for (let i=0;i<PELLET_COUNT;i++) pellets.push(makePellet());
+    camScale = 1; running = true; lastT = null; splitCooldownLeft = 0; maxMassReached = 22;
+    showScreen('screen-game'); bottomnav.style.display='none';
+    requestAnimationFrame(loop);
+  }
+
+  function totalMass(){ return pieces.reduce((s,p)=>s+p.mass, 0); }
+
+  /* controls */
+  let joy = { active:false, originX:0, originY:0, dx:0, dy:0 };
+  const joyBase = document.getElementById('joystick-base'), joyKnob = document.getElementById('joystick-knob');
+  const MAXJOY = 55;
+  function joyStart(x,y){ joy.active=true; joy.originX=x; joy.originY=y; joy.dx=0; joy.dy=0;
+    joyBase.style.display='block'; joyKnob.style.display='block';
+    joyBase.style.left=(x-60)+'px'; joyBase.style.top=(y-60)+'px';
+    joyKnob.style.left=(x-26)+'px'; joyKnob.style.top=(y-26)+'px'; }
+  function joyMove(x,y){ if(!joy.active) return; let dx=x-joy.originX, dy=y-joy.originY; const d=Math.hypot(dx,dy);
+    if (d>MAXJOY){ dx=dx/d*MAXJOY; dy=dy/d*MAXJOY; } joy.dx=dx/MAXJOY; joy.dy=dy/MAXJOY;
+    joyKnob.style.left=(joy.originX+dx-26)+'px'; joyKnob.style.top=(joy.originY+dy-26)+'px'; }
+  function joyEnd(){ joy.active=false; joy.dx=0; joy.dy=0; joyBase.style.display='none'; joyKnob.style.display='none'; }
+  canvas.addEventListener('touchstart', e=>{ const t=e.touches[0]; joyStart(t.clientX,t.clientY); }, {passive:true});
+  canvas.addEventListener('touchmove', e=>{ const t=e.touches[0]; joyMove(t.clientX,t.clientY); }, {passive:true});
+  canvas.addEventListener('touchend', joyEnd);
+  canvas.addEventListener('mousedown', e=>joyStart(e.clientX,e.clientY));
+  window.addEventListener('mousemove', e=>{ if(joy.active) joyMove(e.clientX,e.clientY); });
+  window.addEventListener('mouseup', joyEnd);
+
+  const keys = {};
+  window.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; if (e.key===' ') doSplit(); });
+  window.addEventListener('keyup', e=>keys[e.key.toLowerCase()]=false);
+  function keyboardDir(){ let x=0,y=0;
+    if (keys['arrowup']||keys['w']) y-=1; if (keys['arrowdown']||keys['s']) y+=1;
+    if (keys['arrowleft']||keys['a']) x-=1; if (keys['arrowright']||keys['d']) x+=1;
+    const d=Math.hypot(x,y); return d>0?{x:x/d,y:y/d}:{x:0,y:0}; }
+  function currentDir(){ return joy.active ? {x:joy.dx,y:joy.dy} : keyboardDir(); }
+
+  const splitBtn = document.getElementById('split-btn');
+  splitBtn.addEventListener('click', doSplit);
+  function doSplit(){
+    if (!running) return;
+    if (splitCooldownLeft > 0) return;
+    if (totalMass() < SPLIT_MIN_MASS) return;
+    if (pieces.length >= MAX_PIECES) return;
+    const dir = currentDir();
+    const dx = dir.x||0, dy = dir.y|| -1;
+    const snapshot = pieces.slice();
+    for (const piece of snapshot) {
+      if (pieces.length >= MAX_PIECES) break;
+      if (piece.mass < 18) continue;
+      const half = piece.mass/2;
+      piece.mass = half; piece.dispR = radiusFromMass(half);
+      const nx = piece.x + dx*piece.dispR, ny = piece.y + dy*piece.dispR;
+      pieces.push({ x:nx, y:ny, mass:half, dispR:radiusFromMass(half),
+        boostT:0.28, boostX:dx*420, boostY:dy*420, mergeAt: performance.now()+SPLIT_MERGE_LOCK*1000 });
+      piece.mergeAt = performance.now()+SPLIT_MERGE_LOCK*1000;
+    }
+    splitCooldownLeft = splitCooldownMax();
+  }
+
+  function clampWorld(e){ e.x=Math.max(e.dispR||8, Math.min(WORLD-(e.dispR||8), e.x)); e.y=Math.max(e.dispR||8, Math.min(WORLD-(e.dispR||8), e.y)); }
+
+  function updatePieces(dt){
+    const dir = currentDir();
+    const mult = speedMultiplier();
+    for (const p of pieces) {
+      const spd = baseSpeedFromRadius(p.dispR) * mult;
+      let vx = dir.x*spd, vy = dir.y*spd;
+      if (p.boostT > 0) { vx += p.boostX*(p.boostT/0.28); vy += p.boostY*(p.boostT/0.28); p.boostT = Math.max(0, p.boostT-dt); }
+      p.x += vx*dt; p.y += vy*dt;
+      clampWorld(p);
+      for (let i=pellets.length-1;i>=0;i--){
+        const pel = pellets[i]; const d = Math.hypot(pel.x-p.x, pel.y-p.y);
+        if (d < p.dispR) { p.mass += 1.1; pellets[i] = makePellet(); }
+      }
+    }
+    // merge own pieces if lock expired and overlapping
+    const now = performance.now();
+    for (let i=pieces.length-1;i>0;i--){
+      for (let j=i-1;j>=0;j--){
+        const a=pieces[i], b=pieces[j];
+        if (now < a.mergeAt || now < b.mergeAt) continue;
+        const d = Math.hypot(a.x-b.x,a.y-b.y);
+        if (d < Math.max(a.dispR,b.dispR)*0.5) {
+          b.mass += a.mass; b.dispR = radiusFromMass(b.mass);
+          pieces.splice(i,1); break;
+        }
+      }
+    }
+    pieces.forEach(p=>{ p.dispR += (radiusFromMass(p.mass)-p.dispR)*Math.min(1,dt*6); });
+  }
+
+  function updateBot(bot, dt){
+    bot.dispR += (radiusFromMass(bot.mass)-bot.dispR)*Math.min(1,dt*6);
+    let nearestPiece=null, nd=Infinity;
+    for (const p of pieces){ const d=Math.hypot(p.x-bot.x,p.y-bot.y); if (d<nd){nd=d; nearestPiece=p;} }
+    let dir=null;
+    if (nearestPiece && nd<420) {
+      if (bot.mass > nearestPiece.mass*1.15) dir={x:(nearestPiece.x-bot.x)/nd,y:(nearestPiece.y-bot.y)/nd};
+      else if (nearestPiece.mass > bot.mass*1.15) dir={x:(bot.x-nearestPiece.x)/nd,y:(bot.y-nearestPiece.y)/nd};
+    }
+    if (!dir) {
+      let np=null, npd=Infinity;
+      for (const p of pellets){ const d=Math.hypot(p.x-bot.x,p.y-bot.y); if(d<260 && d<npd){npd=d; np=p;} }
+      if (np) dir={x:(np.x-bot.x)/npd,y:(np.y-bot.y)/npd};
+    }
+    if (!dir) {
+      bot.wanderT -= dt;
+      if (bot.wanderT<=0){ const a=Math.random()*Math.PI*2; bot.wanderDir={x:Math.cos(a),y:Math.sin(a)}; bot.wanderT=1.5+Math.random()*2; }
+      dir = bot.wanderDir;
+    }
+    const spd = baseSpeedFromRadius(bot.dispR);
+    bot.x += dir.x*spd*dt; bot.y += dir.y*spd*dt; clampWorld(bot);
+    for (let i=pellets.length-1;i>=0;i--){ const p=pellets[i]; const d=Math.hypot(p.x-bot.x,p.y-bot.y);
+      if (d<bot.dispR){ bot.mass+=1.1; pellets[i]=makePellet(); } }
+    if (bot.mass>60) bot.mass *= (1-0.0015*dt);
+  }
+
+  function checkCollisions(){
+    for (let bi=bots.length-1; bi>=0; bi--){
+      const bot = bots[bi];
+      for (let pi=pieces.length-1; pi>=0; pi--){
+        const piece = pieces[pi];
+        const d = Math.hypot(piece.x-bot.x, piece.y-bot.y);
+        const overlap = d < Math.max(piece.dispR,bot.dispR) - Math.min(piece.dispR,bot.dispR)*0.35;
+        if (!overlap) continue;
+        if (piece.mass > bot.mass*1.15) { piece.mass += bot.mass*0.6; bots[bi] = makeBot(bi+1, piece); break; }
+        else if (bot.mass > piece.mass*1.15) { pieces.splice(pi,1); if (pieces.length===0) { endGame(); return; } }
+      }
+    }
+  }
+
+  function endGame(){
+    running = false;
+    const finalMass = Math.round(maxMassReached);
+    const earnedTokens = Math.floor(finalMass/5);
+    profile.tokens = (profile.tokens||0) + earnedTokens;
+    profile.bestMass = Math.max(profile.bestMass||0, finalMass);
+    saveField('tokens', profile.tokens);
+    saveField('bestMass', profile.bestMass);
+    document.getElementById('go-mass').textContent = finalMass;
+    document.getElementById('go-tokens').textContent = '+'+earnedTokens+' توکن';
+    document.getElementById('go-best').textContent = profile.bestMass;
+    document.getElementById('home-tokens').textContent = profile.tokens;
+    document.getElementById('home-rank').textContent = Math.max(1, Math.floor(profile.bestMass/50)+1);
+    bottomnav.style.display='flex';
+    showScreen('screen-over');
+  }
+  document.getElementById('back-btn').addEventListener('click', ()=>{ running=false; bottomnav.style.display='flex'; showScreen('screen-home'); });
+  document.getElementById('retry-btn').addEventListener('click', startGame);
+  document.getElementById('menu-btn').addEventListener('click', ()=>showScreen('screen-home'));
+
+  function worldToScreen(x,y,camX,camY,scale){ return { x: innerWidth/2+(x-camX)*scale, y: innerHeight/2+(y-camY)*scale }; }
+
+  function draw(){
+    const totalM = totalMass();
+    const avgR = radiusFromMass(totalM/pieces.length);
+    const targetScale = Math.max(0.5, Math.min(1.15, 1.2 - avgR/230));
+    camScale += (targetScale-camScale)*0.05;
+    let camX=0, camY=0, wsum=0;
+    pieces.forEach(p=>{ camX+=p.x*p.mass; camY+=p.y*p.mass; wsum+=p.mass; });
+    camX/=wsum; camY/=wsum;
+
+    ctx.fillStyle='#04070c'; ctx.fillRect(0,0,innerWidth,innerHeight);
+    ctx.strokeStyle='rgba(255,255,255,0.04)';
+    const gStep=100*camScale;
+    const offX=(innerWidth/2-camX*camScale)%gStep, offY=(innerHeight/2-camY*camScale)%gStep;
+    for (let x=offX;x<innerWidth;x+=gStep){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,innerHeight); ctx.stroke(); }
+    for (let y=offY;y<innerHeight;y+=gStep){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(innerWidth,y); ctx.stroke(); }
+
+    pellets.forEach(p=>{
+      const s=worldToScreen(p.x,p.y,camX,camY,camScale);
+      if (s.x<-20||s.x>innerWidth+20||s.y<-20||s.y>innerHeight+20) return;
+      ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(s.x,s.y,p.r*camScale,0,Math.PI*2); ctx.fill();
+    });
+
+    function drawCircle(e, color, isPlayer, name){
+      const s=worldToScreen(e.x,e.y,camX,camY,camScale); const rr=e.dispR*camScale;
+      const grad = ctx.createRadialGradient(s.x-rr*0.3,s.y-rr*0.3,rr*0.1,s.x,s.y,rr);
+      grad.addColorStop(0, isPlayer?'#8fd0ff':'#ffffff55'); grad.addColorStop(1, color);
+      ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(s.x,s.y,rr,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=2; ctx.stroke();
+      if (name) { ctx.fillStyle='#fff'; ctx.font=`${Math.max(11,12*camScale)}px sans-serif`; ctx.textAlign='center'; ctx.fillText(name, s.x, s.y+4); }
+    }
+
+    bots.forEach(b=>drawCircle(b, b.color, false, b.name));
+    const equippedColor = (SKIN_DB[profile.equippedSkin]||SKIN_DB.dead_star).color;
+    pieces.forEach(p=>drawCircle(p, equippedColor, true, null));
+
+    // split cooldown UI
+    splitBtn.disabled = totalM < SPLIT_MIN_MASS || pieces.length>=MAX_PIECES || splitCooldownLeft>0;
+    splitBtn.textContent = splitCooldownLeft>0 ? Math.ceil(splitCooldownLeft)+'s' : 'تقسیم';
+  }
+
+  function loop(t){
+    if (!running) return;
+    if (!lastT) lastT=t; const dt=Math.min(0.05,(t-lastT)/1000); lastT=t;
+    updatePieces(dt); bots.forEach(b=>updateBot(b,dt)); checkCollisions();
+    if (!running) return;
+    if (splitCooldownLeft>0) splitCooldownLeft=Math.max(0,splitCooldownLeft-dt);
+    const tm = totalMass(); if (tm>maxMassReached) maxMassReached=tm;
+    document.getElementById('hud-mass').textContent = Math.round(tm);
+    document.getElementById('hud-pieces').textContent = pieces.length;
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  showScreen('screen-home');
+})();
+</script>
+</body>
+</html>
