@@ -9,140 +9,357 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; height: 100%;
-    background: #0e1621;
+    background: radial-gradient(circle at 50% 0%, #16243a 0%, #0a1220 60%, #060b14 100%);
     color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Roboto, sans-serif;
     overflow: hidden;
     touch-action: none;
     user-select: none;
   }
-  #app {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    height: 100vh;
-    padding: 12px;
+  #app { position: relative; height: 100vh; width: 100vw; }
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 16px;
+    overflow-y: auto;
+    animation: fadeIn .25s ease;
   }
-  h1 {
-    font-size: 22px;
-    margin: 4px 0 10px 0;
-    color: #4fa8ff;
+  .screen.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+
+  h1.title {
+    font-size: 30px; margin: 18px 0 4px 0; font-weight: 800;
+    background: linear-gradient(90deg,#4fa8ff,#7ee787);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
   }
+  .subtitle { color: #9db2c7; font-size: 14px; margin-bottom: 22px; text-align: center; }
+
+  .card {
+    background: linear-gradient(160deg,#161f30,#111826);
+    border: 1px solid #223144;
+    border-radius: 18px;
+    padding: 18px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  input.name-input {
+    width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid #2c3d52;
+    background: #0e1621; color: #fff; font-size: 17px; text-align: center;
+    outline: none; margin-bottom: 14px;
+  }
+  input.name-input:focus { border-color: #4fa8ff; }
+
+  button.btn {
+    background: linear-gradient(135deg,#4fa8ff,#3d7fc9);
+    color: #fff; border: none; border-radius: 14px;
+    padding: 14px 20px; font-size: 16px; font-weight: 700;
+    cursor: pointer; width: 100%;
+    box-shadow: 0 6px 16px rgba(79,168,255,.35);
+    transition: transform .1s;
+  }
+  button.btn:active { transform: scale(.96); }
+  button.btn.secondary {
+    background: #1c2634; box-shadow: none; border: 1px solid #2c3d52; color: #cfe0f2;
+  }
+  button.btn.ghost {
+    background: transparent; box-shadow: none; border: none; color: #7fb4ff;
+    font-weight: 600; padding: 10px;
+  }
+
+  .row-gap { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+  /* Menu screen */
+  .player-badge {
+    display: flex; align-items: center; gap: 10px;
+    background: #101a29; border: 1px solid #223144; border-radius: 14px;
+    padding: 10px 14px; margin-bottom: 18px; width: 100%; max-width: 420px;
+  }
+  .player-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg,#4fa8ff,#7ee787);
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;
+  }
+  .player-info { flex: 1; }
+  .player-info .label { font-size: 11px; color: #7f93a8; }
+  .player-info .value { font-size: 16px; font-weight: 700; }
+  .change-name-btn { background: none; border: none; color: #4fa8ff; font-size: 13px; font-weight: 600; }
+
+  .section-label { align-self: flex-start; font-size: 14px; color: #9db2c7; margin: 16px 0 8px 2px; max-width: 420px; width: 100%; }
+
+  .skins-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    width: 100%; max-width: 420px;
+  }
+  .skin-option {
+    aspect-ratio: 1; border-radius: 14px; border: 2px solid #223144;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+  }
+  .skin-option.selected { border-color: #7ee787; box-shadow: 0 0 0 3px rgba(126,231,135,.25); }
+  .skin-swatch { width: 60%; height: 60%; border-radius: 50%; }
+  .skin-check {
+    position: absolute; bottom: -6px; right: -6px; background: #7ee787; color: #0a1220;
+    width: 18px; height: 18px; border-radius: 50%; font-size: 12px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* HUD + game */
   #hud {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 400px;
-    font-size: 16px;
-    margin-bottom: 8px;
-    padding: 0 4px;
+    display: flex; justify-content: space-between; width: 100%; max-width: 400px;
+    font-size: 15px; margin-bottom: 8px; padding: 0 4px;
   }
   #hud span b { color: #4fa8ff; }
-  #board-wrap {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    aspect-ratio: 1 / 1;
-  }
+  #board-wrap { position: relative; width: 100%; max-width: 400px; aspect-ratio: 1/1; }
   canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #17212b;
-    border-radius: 14px;
-    border: 2px solid #223244;
+    width: 100%; height: 100%; display: block;
+    background: linear-gradient(160deg,#17212b,#101823);
+    border-radius: 16px; border: 2px solid #223244;
   }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(14,22,33,0.88);
-    border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    text-align: center;
-    padding: 20px;
-  }
-  #overlay.hidden { display: none; }
-  #overlay h2 { margin: 0; font-size: 22px; }
-  #overlay p { margin: 0; color: #9db2c7; font-size: 14px; }
-  button.btn {
-    background: #4fa8ff;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 12px 28px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  button.btn:active { opacity: 0.8; }
   #controls {
-    display: grid;
-    grid-template-columns: 60px 60px 60px;
-    grid-template-rows: 55px 55px 55px;
-    gap: 8px;
-    margin-top: 16px;
+    display: grid; grid-template-columns: 58px 58px 58px; grid-template-rows: 52px 52px 52px;
+    gap: 8px; margin-top: 16px;
   }
   .ctrl-btn {
-    background: #1f2a38;
-    border: 1px solid #2c3d52;
-    border-radius: 12px;
-    color: #4fa8ff;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #1f2a38; border: 1px solid #2c3d52; border-radius: 12px;
+    color: #4fa8ff; font-size: 22px; display: flex; align-items: center; justify-content: center;
   }
   .ctrl-btn:active { background: #2c3d52; }
-  .empty { visibility: hidden; }
+  .ctrl-btn.empty { visibility: hidden; }
+
+  /* Game over */
+  .go-score { font-size: 48px; font-weight: 900; color: #7ee787; margin: 8px 0; }
+  .go-best { color: #9db2c7; font-size: 14px; margin-bottom: 20px; }
+  .new-best-badge {
+    background: linear-gradient(135deg,#ffd700,#ff9d00); color: #3a2400; font-weight: 800;
+    padding: 5px 14px; border-radius: 999px; font-size: 12px; margin-bottom: 12px;
+  }
+
+  /* Leaderboard */
+  .lb-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #101a29; border: 1px solid #1d2b3d; border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 8px; width: 100%; max-width: 420px;
+  }
+  .lb-rank { width: 26px; font-weight: 800; color: #7f93a8; }
+  .lb-rank.gold { color: #ffd700; } .lb-rank.silver { color: #d6dee6; } .lb-rank.bronze { color: #cd7f32; }
+  .lb-name { flex: 1; font-weight: 600; }
+  .lb-score { font-weight: 800; color: #7ee787; }
+  .lb-empty { color: #7f93a8; text-align: center; margin-top: 30px; font-size: 14px; }
 </style>
 </head>
 <body>
 <div id="app">
-  <h1>🐍 مار بازی</h1>
-  <div id="hud">
-    <span>امتیاز: <b id="score">0</b></span>
-    <span>رکورد: <b id="best">0</b></span>
-  </div>
-  <div id="board-wrap">
-    <canvas id="board"></canvas>
-    <div id="overlay">
-      <h2 id="overlay-title">آماده‌ای؟</h2>
-      <p id="overlay-text">با فلش‌ها یا دکمه‌های پایین حرکت کن</p>
-      <button class="btn" id="start-btn">شروع بازی</button>
+
+  <!-- NAME SCREEN -->
+  <div class="screen" id="screen-name">
+    <h1 class="title">🐍 مار بازی</h1>
+    <p class="subtitle">اسمت رو وارد کن تا وارد بازی بشی</p>
+    <div class="card">
+      <input class="name-input" id="name-input" maxlength="14" placeholder="اسم شما...">
+      <button class="btn" id="name-continue">ادامه</button>
     </div>
   </div>
-  <div id="controls">
-    <div class="ctrl-btn empty"></div>
-    <div class="ctrl-btn" id="btn-up">▲</div>
-    <div class="ctrl-btn empty"></div>
-    <div class="ctrl-btn" id="btn-left">◀</div>
-    <div class="ctrl-btn" id="btn-down">▼</div>
-    <div class="ctrl-btn" id="btn-right">▶</div>
+
+  <!-- MENU SCREEN -->
+  <div class="screen hidden" id="screen-menu">
+    <h1 class="title">🐍 مار بازی</h1>
+    <div class="player-badge">
+      <div class="player-avatar" id="menu-avatar">A</div>
+      <div class="player-info">
+        <div class="label">بازیکن</div>
+        <div class="value" id="menu-name">—</div>
+      </div>
+      <button class="change-name-btn" id="change-name-btn">تغییر اسم</button>
+    </div>
+
+    <div class="section-label">اسکین مار رو انتخاب کن</div>
+    <div class="skins-grid" id="skins-grid"></div>
+
+    <div class="row-gap" style="width:100%; max-width:420px;">
+      <button class="btn" id="play-btn">▶ شروع بازی (Play Game)</button>
+      <button class="btn secondary" id="leaderboard-btn">🏆 جدول امتیازات</button>
+    </div>
   </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen hidden" id="screen-game">
+    <div id="hud">
+      <span>امتیاز: <b id="score">0</b></span>
+      <span>رکورد: <b id="best">0</b></span>
+    </div>
+    <div id="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+    <div id="controls">
+      <div class="ctrl-btn empty"></div>
+      <div class="ctrl-btn" id="btn-up">▲</div>
+      <div class="ctrl-btn empty"></div>
+      <div class="ctrl-btn" id="btn-left">◀</div>
+      <div class="ctrl-btn empty"></div>
+      <div class="ctrl-btn" id="btn-right">▶</div>
+      <div class="ctrl-btn empty"></div>
+      <div class="ctrl-btn" id="btn-down">▼</div>
+      <div class="ctrl-btn empty"></div>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="screen hidden" id="screen-gameover">
+    <h1 class="title">باختی! 💥</h1>
+    <div class="go-score" id="go-score">0</div>
+    <div id="go-newbest" class="new-best-badge" style="display:none;">🏅 رکورد جدید!</div>
+    <div class="go-best">رکورد شما: <b id="go-best">0</b></div>
+    <div class="row-gap" style="width:100%; max-width:420px;">
+      <button class="btn" id="retry-btn">🔁 دوباره بازی کن</button>
+      <button class="btn secondary" id="gomenu-btn">منوی اصلی</button>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD SCREEN -->
+  <div class="screen hidden" id="screen-leaderboard">
+    <h1 class="title">🏆 جدول امتیازات</h1>
+    <p class="subtitle">بهترین امتیازهای ثبت‌شده روی این دستگاه</p>
+    <div id="lb-list" style="width:100%; max-width:420px;"></div>
+    <button class="btn ghost" id="lb-back-btn">بازگشت</button>
+  </div>
+
 </div>
 
 <script>
 (function () {
   const tg = window.Telegram && window.Telegram.WebApp;
-  if (tg) {
-    tg.ready();
-    tg.expand();
-    try {
-      document.body.style.background = tg.themeParams.bg_color ? '#' + '' : '';
-    } catch (e) {}
+  if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+
+  /* ---------- storage helpers ---------- */
+  const LS = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+  };
+
+  /* ---------- skins ---------- */
+  const SKINS = [
+    { id:'classic', name:'کلاسیک آبی', head:'#4fa8ff', headDark:'#2f7fd6', body:'#3d7fc9', bodyDark:'#2a5a94', food:'#ff5c5c', glow:false, pattern:'none' },
+    { id:'neon',    name:'نئون سبز',   head:'#39ff8a', headDark:'#1fcf66', body:'#1f8c4e', bodyDark:'#146538', food:'#ff5cf0', glow:true,  pattern:'none' },
+    { id:'fire',    name:'آتشین',      head:'#ff7a3d', headDark:'#e0501a', body:'#c9422a', bodyDark:'#8f2c1c', food:'#ffd23d', glow:true,  pattern:'stripe' },
+    { id:'ocean',   name:'اقیانوسی',   head:'#a86fff', headDark:'#7a45d9', body:'#6b3fa0', bodyDark:'#4a2b73', food:'#3dd6ff', glow:false, pattern:'dot' },
+    { id:'gold',    name:'طلایی',      head:'#ffe066', headDark:'#e0b100', body:'#c99a1f', bodyDark:'#8a6a12', food:'#ff5c5c', glow:true,  pattern:'stripe' },
+  ];
+
+  let currentSkinIdx = LS.get('snake_skin', 0);
+  if (currentSkinIdx < 0 || currentSkinIdx >= SKINS.length) currentSkinIdx = 0;
+
+  /* ---------- screens ---------- */
+  const screens = {};
+  document.querySelectorAll('.screen').forEach(s => screens[s.id] = s);
+  function showScreen(id) {
+    Object.values(screens).forEach(s => s.classList.add('hidden'));
+    screens[id].classList.remove('hidden');
   }
 
+  /* ---------- name flow ---------- */
+  const nameInput = document.getElementById('name-input');
+  const menuName = document.getElementById('menu-name');
+  const menuAvatar = document.getElementById('menu-avatar');
+
+  function getName() { return LS.get('snake_name', ''); }
+  function setName(n) {
+    n = (n || '').trim().slice(0, 14) || 'بازیکن';
+    LS.set('snake_name', n);
+    menuName.textContent = n;
+    menuAvatar.textContent = n.trim().charAt(0).toUpperCase();
+  }
+
+  document.getElementById('name-continue').addEventListener('click', () => {
+    setName(nameInput.value);
+    renderSkins();
+    updateBestDisplay();
+    showScreen('screen-menu');
+  });
+  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('name-continue').click(); });
+
+  document.getElementById('change-name-btn').addEventListener('click', () => {
+    nameInput.value = getName();
+    showScreen('screen-name');
+    setTimeout(() => nameInput.focus(), 50);
+  });
+
+  /* ---------- skin selection UI ---------- */
+  const skinsGrid = document.getElementById('skins-grid');
+  function renderSkins() {
+    skinsGrid.innerHTML = '';
+    SKINS.forEach((skin, i) => {
+      const el = document.createElement('div');
+      el.className = 'skin-option' + (i === currentSkinIdx ? ' selected' : '');
+      el.title = skin.name;
+      const swatch = document.createElement('div');
+      swatch.className = 'skin-swatch';
+      swatch.style.background = `linear-gradient(135deg, ${skin.head}, ${skin.bodyDark})`;
+      if (skin.glow) swatch.style.boxShadow = `0 0 12px ${skin.head}`;
+      el.appendChild(swatch);
+      if (i === currentSkinIdx) {
+        const check = document.createElement('div');
+        check.className = 'skin-check'; check.textContent = '✓';
+        el.appendChild(check);
+      }
+      el.addEventListener('click', () => {
+        currentSkinIdx = i;
+        LS.set('snake_skin', i);
+        renderSkins();
+      });
+      skinsGrid.appendChild(el);
+    });
+  }
+
+  /* ---------- menu navigation ---------- */
+  document.getElementById('play-btn').addEventListener('click', startGame);
+  document.getElementById('leaderboard-btn').addEventListener('click', () => { renderLeaderboard(); showScreen('screen-leaderboard'); });
+  document.getElementById('lb-back-btn').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('retry-btn').addEventListener('click', startGame);
+  document.getElementById('gomenu-btn').addEventListener('click', () => { renderSkins(); showScreen('screen-menu'); });
+
+  /* ---------- leaderboard ---------- */
+  function getBest() {
+    const board = LS.get('snake_leaderboard', []);
+    const mine = board.filter(r => r.name === getName());
+    return mine.length ? Math.max(...mine.map(r => r.score)) : 0;
+  }
+  function updateBestDisplay() {
+    document.getElementById('best').textContent = getBest();
+  }
+  function saveScore(score) {
+    const board = LS.get('snake_leaderboard', []);
+    board.push({ name: getName(), score, date: Date.now() });
+    board.sort((a,b) => b.score - a.score);
+    LS.set('snake_leaderboard', board.slice(0, 30));
+  }
+  function renderLeaderboard() {
+    const board = LS.get('snake_leaderboard', []).slice(0, 10);
+    const list = document.getElementById('lb-list');
+    list.innerHTML = '';
+    if (!board.length) {
+      list.innerHTML = '<div class="lb-empty">هنوز امتیازی ثبت نشده. یه بازی انجام بده!</div>';
+      return;
+    }
+    const medalClass = ['gold','silver','bronze'];
+    board.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+      row.innerHTML = `<div class="lb-rank ${medalClass[i]||''}">#${i+1}</div>
+                        <div class="lb-name">${escapeHtml(r.name)}</div>
+                        <div class="lb-score">${r.score}</div>`;
+      list.appendChild(row);
+    });
+  }
+  function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  /* ---------- game ---------- */
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
   const GRID = 18;
   let cellSize;
 
-  function resize() {
+  function resizeCanvas() {
     const wrap = document.getElementById('board-wrap');
     const size = wrap.clientWidth;
     canvas.width = size * devicePixelRatio;
@@ -151,146 +368,218 @@
     canvas.style.height = size + 'px';
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     cellSize = size / GRID;
-    draw();
   }
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', resizeCanvas);
 
-  let snake, dir, nextDir, food, score, best, alive, loopId;
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
-  const overlay = document.getElementById('overlay');
-  const overlayTitle = document.getElementById('overlay-title');
-  const overlayText = document.getElementById('overlay-text');
-  const startBtn = document.getElementById('start-btn');
-
-  best = parseInt(localStorage.getItem('snake_best') || '0', 10);
-  bestEl.textContent = best;
+  let snake, prevSnake, dir, nextDir, food, score, alive, tickInterval, lastTick, rafId, particles, foodPulse;
 
   function placeFood() {
     while (true) {
-      const p = { x: Math.floor(Math.random() * GRID), y: Math.floor(Math.random() * GRID) };
-      if (!snake.some(s => s.x === p.x && s.y === p.y)) return p;
+      const p = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
+      if (!snake.some(s => s.x===p.x && s.y===p.y)) return p;
     }
   }
 
-  function reset() {
-    snake = [{ x: 8, y: 9 }, { x: 7, y: 9 }, { x: 6, y: 9 }];
-    dir = { x: 1, y: 0 };
-    nextDir = { x: 1, y: 0 };
+  function resetState() {
+    snake = [{x:8,y:9},{x:7,y:9},{x:6,y:9}];
+    prevSnake = snake.map(s => ({...s}));
+    dir = {x:1,y:0}; nextDir = {x:1,y:0};
     food = placeFood();
-    score = 0;
-    alive = true;
-    scoreEl.textContent = score;
+    score = 0; alive = true; particles = []; foodPulse = 0;
+    tickInterval = 150;
+    document.getElementById('score').textContent = score;
   }
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // food
-    ctx.fillStyle = '#ff5c5c';
-    roundRect(food.x * cellSize + 2, food.y * cellSize + 2, cellSize - 4, cellSize - 4, 5);
-    ctx.fill();
-    // snake
-    snake.forEach((s, i) => {
-      ctx.fillStyle = i === 0 ? '#4fa8ff' : '#3d7fc9';
-      roundRect(s.x * cellSize + 1, s.y * cellSize + 1, cellSize - 2, cellSize - 2, 4);
-      ctx.fill();
-    });
-  }
+  function speedForScore(s) { return Math.max(80, 150 - Math.floor(s/50)*8); }
 
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function tick() {
-    if (!alive) return;
+  function logicTick() {
+    prevSnake = snake.map(s => ({...s}));
     dir = nextDir;
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID ||
-        snake.some(s => s.x === head.x && s.y === head.y)) {
-      return gameOver();
+    if (head.x < 0 || head.y < 0 || head.x >= GRID || head.y >= GRID || snake.some(s => s.x===head.x && s.y===head.y)) {
+      return endGame();
     }
-
     snake.unshift(head);
-
     if (head.x === food.x && head.y === food.y) {
       score += 10;
-      scoreEl.textContent = score;
+      document.getElementById('score').textContent = score;
+      spawnParticles(food.x, food.y);
       food = placeFood();
-      if (tg) tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light');
+      tickInterval = speedForScore(score);
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     } else {
       snake.pop();
     }
-    draw();
   }
 
-  function gameOver() {
-    alive = false;
-    clearInterval(loopId);
-    if (score > best) {
-      best = score;
-      localStorage.setItem('snake_best', best);
-      bestEl.textContent = best;
+  function spawnParticles(gx, gy) {
+    const cx = gx*cellSize + cellSize/2, cy = gy*cellSize + cellSize/2;
+    for (let i=0;i<10;i++) {
+      const ang = Math.random()*Math.PI*2, speed = 1+Math.random()*2;
+      particles.push({ x:cx, y:cy, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, life:1 });
     }
-    overlayTitle.textContent = 'باختی! 💥';
-    overlayText.textContent = 'امتیاز: ' + score;
-    startBtn.textContent = 'دوباره بازی کن';
-    overlay.classList.remove('hidden');
-    if (tg) tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('error');
+  }
+
+  function lerp(a,b,t) { return a+(b-a)*t; }
+
+  function draw(t) {
+    const skin = SKINS[currentSkinIdx];
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // grid subtle
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    for (let i=1;i<GRID;i++) {
+      ctx.beginPath(); ctx.moveTo(i*cellSize,0); ctx.lineTo(i*cellSize,GRID*cellSize); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,i*cellSize); ctx.lineTo(GRID*cellSize,i*cellSize); ctx.stroke();
+    }
+
+    // food with pulse
+    foodPulse += 0.12;
+    const pulse = 1 + Math.sin(foodPulse)*0.08;
+    const fSize = (cellSize-6)*pulse;
+    const fx = food.x*cellSize + cellSize/2, fy = food.y*cellSize + cellSize/2;
+    ctx.save();
+    if (skin.glow) { ctx.shadowColor = skin.food; ctx.shadowBlur = 14; }
+    ctx.fillStyle = skin.food;
+    ctx.beginPath(); ctx.arc(fx, fy, fSize/2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // snake body, interpolated
+    for (let i = snake.length-1; i >= 0; i--) {
+      const cur = snake[i];
+      const prev = prevSnake[i] || cur;
+      const x = lerp(prev.x, cur.x, t) * cellSize;
+      const y = lerp(prev.y, cur.y, t) * cellSize;
+      const isHead = i === 0;
+      const w = cellSize - (isHead ? 1 : 2);
+
+      ctx.save();
+      if (skin.glow) { ctx.shadowColor = skin.head; ctx.shadowBlur = isHead ? 10 : 5; }
+      const grad = ctx.createLinearGradient(x, y, x+w, y+w);
+      if (isHead) { grad.addColorStop(0, skin.head); grad.addColorStop(1, skin.headDark); }
+      else { grad.addColorStop(0, skin.body); grad.addColorStop(1, skin.bodyDark); }
+      ctx.fillStyle = grad;
+      roundRect(x + (cellSize-w)/2, y + (cellSize-w)/2, w, w, isHead ? 8 : 6);
+      ctx.fill();
+
+      if (skin.pattern === 'stripe' && i % 2 === 0 && !isHead) {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        roundRect(x+cellSize*0.15, y+cellSize*0.35, cellSize*0.7, cellSize*0.3, 3); ctx.fill();
+      }
+      if (skin.pattern === 'dot' && !isHead) {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath(); ctx.arc(x+cellSize/2, y+cellSize/2, cellSize*0.1, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+
+      if (isHead) drawEyes(x, y);
+    }
+
+    // particles
+    particles.forEach(p => {
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillStyle = skin.food;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawEyes(x, y) {
+    const eyeR = cellSize*0.09;
+    let ex1, ey1, ex2, ey2;
+    const off = cellSize*0.24, mid = cellSize/2;
+    if (dir.x === 1)      { ex1=x+cellSize-off; ey1=y+off; ex2=x+cellSize-off; ey2=y+cellSize-off; }
+    else if (dir.x === -1){ ex1=x+off; ey1=y+off; ex2=x+off; ey2=y+cellSize-off; }
+    else if (dir.y === 1) { ex1=x+off; ey1=y+cellSize-off; ex2=x+cellSize-off; ey2=y+cellSize-off; }
+    else                  { ex1=x+off; ey1=y+off; ex2=x+cellSize-off; ey2=y+off; }
+    ctx.fillStyle = '#0a1220';
+    ctx.beginPath(); ctx.arc(ex1, ey1, eyeR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex2, ey2, eyeR, 0, Math.PI*2); ctx.fill();
+  }
+
+  function roundRect(x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function loop(now) {
+    if (!alive) return;
+    if (!lastTick) lastTick = now;
+    const elapsed = now - lastTick;
+    if (elapsed >= tickInterval) {
+      logicTick();
+      lastTick = now;
+    }
+    if (!alive) return; // stopped inside logicTick -> endGame
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; });
+    particles = particles.filter(p => p.life > 0);
+    const t = Math.min(1, (now - lastTick) / tickInterval);
+    draw(t);
+    rafId = requestAnimationFrame(loop);
   }
 
   function startGame() {
-    reset();
-    overlay.classList.add('hidden');
-    draw();
-    clearInterval(loopId);
-    loopId = setInterval(tick, 140);
+    resizeCanvas();
+    resetState();
+    updateBestDisplay();
+    showScreen('screen-game');
+    lastTick = null;
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
   }
 
-  startBtn.addEventListener('click', startGame);
-
-  function setDir(x, y) {
-    if (dir.x === -x && dir.y === -y) return; // no reverse
-    nextDir = { x, y };
+  function endGame() {
+    alive = false;
+    cancelAnimationFrame(rafId);
+    const prevBest = getBest();
+    saveScore(score);
+    document.getElementById('go-score').textContent = score;
+    document.getElementById('go-best').textContent = Math.max(prevBest, score);
+    document.getElementById('go-newbest').style.display = score > prevBest ? 'inline-block' : 'none';
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+    showScreen('screen-gameover');
   }
+
+  function setDir(x,y) { if (dir.x === -x && dir.y === -y) return; nextDir = {x,y}; }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp') setDir(0, -1);
-    else if (e.key === 'ArrowDown') setDir(0, 1);
-    else if (e.key === 'ArrowLeft') setDir(-1, 0);
-    else if (e.key === 'ArrowRight') setDir(1, 0);
+    if (e.key === 'ArrowUp') setDir(0,-1);
+    else if (e.key === 'ArrowDown') setDir(0,1);
+    else if (e.key === 'ArrowLeft') setDir(-1,0);
+    else if (e.key === 'ArrowRight') setDir(1,0);
   });
+  document.getElementById('btn-up').addEventListener('click', () => setDir(0,-1));
+  document.getElementById('btn-down').addEventListener('click', () => setDir(0,1));
+  document.getElementById('btn-left').addEventListener('click', () => setDir(-1,0));
+  document.getElementById('btn-right').addEventListener('click', () => setDir(1,0));
 
-  document.getElementById('btn-up').addEventListener('click', () => setDir(0, -1));
-  document.getElementById('btn-down').addEventListener('click', () => setDir(0, 1));
-  document.getElementById('btn-left').addEventListener('click', () => setDir(-1, 0));
-  document.getElementById('btn-right').addEventListener('click', () => setDir(1, 0));
-
-  // swipe support
   let touchStart = null;
-  canvas.addEventListener('touchstart', e => {
-    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  });
+  canvas.addEventListener('touchstart', e => { touchStart = {x:e.touches[0].clientX, y:e.touches[0].clientY}; });
   canvas.addEventListener('touchend', e => {
     if (!touchStart) return;
     const dx = e.changedTouches[0].clientX - touchStart.x;
     const dy = e.changedTouches[0].clientY - touchStart.y;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      setDir(dx > 0 ? 1 : -1, 0);
-    } else {
-      setDir(0, dy > 0 ? 1 : -1);
-    }
+    if (Math.abs(dx) > Math.abs(dy)) setDir(dx>0?1:-1, 0); else setDir(0, dy>0?1:-1);
     touchStart = null;
   });
 
-  reset();
-  resize();
+  /* ---------- boot ---------- */
+  const savedName = getName();
+  if (savedName) {
+    setName(savedName);
+    renderSkins();
+    updateBestDisplay();
+    showScreen('screen-menu');
+  } else {
+    showScreen('screen-name');
+  }
+  resizeCanvas();
 })();
 </script>
 </body>
